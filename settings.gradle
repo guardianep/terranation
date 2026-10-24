@@ -1,0 +1,3 @@
+// settings.gradle: tells Gradle the name of this project.
+// It is read before build.gradle. Only one project here, so the name is all it needs.
+rootProject.name = 'terranation'

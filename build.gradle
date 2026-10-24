@@ -1,0 +1,32 @@
+// build.gradle: the build script. It says which plugins, Java version and
+// libraries the project uses. Gradle reads it when you run "gradlew" commands.
+
+plugins {
+    // The "application" plugin adds a "run" task that starts the program.
+    id 'application'
+}
+
+java {
+    toolchain {
+        // Compile and run with Java 21, whatever JDK the computer uses by default.
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    // Gradle downloads libraries from Maven Central, a public library website.
+    mavenCentral()
+}
+
+dependencies {
+    // jMonkeyEngine, the 3D engine. The three jme3 libraries together
+    // are the minimum needed to open a window on a desktop.
+    implementation 'org.jmonkeyengine:jme3-core:3.9.0-stable'
+    implementation 'org.jmonkeyengine:jme3-desktop:3.9.0-stable'
+    implementation 'org.jmonkeyengine:jme3-lwjgl3:3.9.0-stable'
+}
+
+application {
+    // The class whose main() method runs first. Must match the package and file name.
+    mainClass = 'terranation.Main'
+}
