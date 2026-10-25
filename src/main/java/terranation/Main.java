@@ -1,6 +1,7 @@
 package terranation;
 
 import com.jme3.app.SimpleApplication;
+import com.jme3.scene.Geometry;
 import com.jme3.system.AppSettings;
 
 // Main only starts the game and runs the game loop. Everything else has its own class:
@@ -13,6 +14,8 @@ import com.jme3.system.AppSettings;
 public class Main extends SimpleApplication {
     private Car car;            // the car the player controls
     private PlayerInput input;  // what keys the player is pressing
+    private HudManager hud;        // the on-screen display of speed and gear
+    private Geometry floor;     // the floor, moved under the car every frame so the map feels endless
 
     // main() is where Java starts running the program.
     public static void main(String[] args) {
@@ -35,10 +38,11 @@ public class Main extends SimpleApplication {
     // Called once when the window opens. Builds the game by calling the other classes.
     @Override
     public void simpleInitApp() {
-        WorldBuilder.build(assetManager, rootNode, viewPort);
+        floor = WorldBuilder.build(assetManager, rootNode, viewPort);
         car = CarBuilder.build(assetManager, rootNode);
         input = new PlayerInput(inputManager);
         CameraSettings.attach(flyCam, cam, inputManager, car.getBody());
+        hud = new HudManager(assetManager, guiNode);
     }
 
     // Called every frame. tpf is the time since the last frame.
@@ -48,5 +52,7 @@ public class Main extends SimpleApplication {
         car.steer(input.getSteering(), tpf);
         car.update(tpf);
         input.resetSteering();
+        WorldBuilder.followFloor(floor, car.getPosition());
+        hud.update(car.geteSpeed(), car.getGear(), car.getRpm());
     }
 }

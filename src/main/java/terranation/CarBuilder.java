@@ -26,7 +26,7 @@ public class CarBuilder {
         rootNode.attachChild(carGeo);
 
         // Pass your choice of car preset here!
-        CarAttributes specs = CarAttributes.sportsCar();
+        CarAttributes specs = CarAttributes.heavyTruck();
         return new Car(carGeo, specs);
     }
 }

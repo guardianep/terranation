@@ -13,6 +13,10 @@ public class Car {
     private float heading = 0f;  // the angle of rotation calculated in radians
     private Geometry body; // the geometry of the car
     private float turnSpeed = 1.6f;
+    private float maxRpm;
+    private float idleRpm;
+    private int numGears;
+    private float powerHold= 1.5f;
 
     // Builds a car with the standard sedan numbers.
     public Car(Geometry body) {
@@ -27,6 +31,10 @@ public class Car {
         this.acceleration = specs.getAcceleration();
         this.deceleration = specs.getDeceleration();
         this.turnSpeed = specs.getTurnSpeed();
+        this.maxRpm = specs.getMaxRpm();
+        this.idleRpm = specs.getIdleRpm();
+        this.numGears = specs.getNumGears();
+        this.powerHold = specs.getPowerHold();
     }
 
     public void handleInput(boolean pressingForward, boolean pressingBackward, float tpf) {
@@ -35,7 +43,7 @@ public class Car {
             speed += acceleration * 2 * tpf;
             if (speed > 0) speed =0;
          } else {
-            speed += acceleration * tpf;
+            speed += getEngineAcceleration() * tpf;;
             if (speed > maxSpeed) speed = maxSpeed;
          }
         } else if (pressingBackward) {
@@ -77,9 +85,38 @@ public class Car {
          body.move(direction.mult(speed * tpf));
     }
 
+    //decides ghow hard the engine can push and accelerate depending on the gear it is in
+
+    private float getEngineAcceleration() {
+        int gear = Math.max(getGear(), 1); // ensure gear is at least 1
+        float gearProgress = (numGears <= 1) ? 0f : (gear - 1f) / (numGears - 1f);
+        float gearFactor = 1f - 0.6f * gearProgress;
+        float topSpeedFactor = 1f - (float) Math.pow(speed / maxSpeed, powerHold);
+        return acceleration * gearFactor * topSpeedFactor;
+    }
+
+
+    public int getGear() {
+        if (speed < 0.1f) return 0; //this means reverse which the hud SHOULD display as R
+        int gear = 1 + (int) (speed / maxSpeed * numGears);
+        return Math.min(gear, numGears); // ensure gear does not exceed numGears
+    }
+
+
+
+    public float getRpm() {
+        float bandSize = maxSpeed / numGears;
+        float speedInGear = Math.abs(speed) - (Math.max(getGear(), 1) -1) * bandSize;
+        float fraction = Math.min(speedInGear / bandSize, 1f);
+        return idleRpm + fraction * (maxRpm - idleRpm);
+    }
+
     // Lets other classes (like the camera) know which 3D shape the car is.
     public Geometry getBody() {
         return body;
+    }
+    public float geteSpeed() {
+        return speed;
     }
 
     public Vector3f getPosition() {
