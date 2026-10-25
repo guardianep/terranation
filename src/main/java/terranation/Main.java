@@ -4,10 +4,14 @@ import com.jme3.input.ChaseCamera;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
+import com.jme3.math.FastMath;
+import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.shape.Box;
+import com.jme3.scene.shape.Quad;
 import com.jme3.system.AppSettings;
+import com.jme3.texture.Texture;
 
 // Main is the starting point of the game. It "extends" SimpleApplication,
 // which means it inherits the engine's window, game loop and camera.
@@ -17,6 +21,7 @@ public class Main extends SimpleApplication {
     private boolean isAccelerating = false;
     private boolean isBraking = false;
     private float steeringInput = 0f;
+    private boolean isReversing = false;
 
     // main() is where Java starts running the program.
     public static void main(String[] args) {
@@ -39,15 +44,6 @@ public class Main extends SimpleApplication {
     // Called once when the window opens. Later this will build the game world.
     @Override
     public void simpleInitApp() {
-            // the FLOOR
-            Box floorMesh = new Box(100,0.1f,100f);
-            Geometry floor = new Geometry("Floor",floorMesh); 
-            Material floorMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-            floorMat.setColor("Color", ColorRGBA.DarkGray);
-            floor.setMaterial(floorMat);
-            floor.move(0,-0.1f,0);
-            rootNode.attachChild(floor);
-
             viewPort.setBackgroundColor(ColorRGBA.Blue); 
 
             DirectionalLight sun = new DirectionalLight();
@@ -74,12 +70,12 @@ public class Main extends SimpleApplication {
 
             inputManager.addListener((com.jme3.input.controls.ActionListener) (name, isPressed, tpf) -> {
                 if (name.equals("Accelerate")) isAccelerating = isPressed;
-                if (name.equals("Brake")) isBraking = isPressed;
+                if (name.equals("Brake")) isReversing = isPressed;
             }, "Accelerate", "Brake");
 
             inputManager.addListener((com.jme3.input.controls.AnalogListener) (name, value, tpf) -> {
-                if (name.equals("TurnLeft")) steeringInput = 1.5f;
-                else if (name.equals("TurnRight")) steeringInput = -1.5f;
+                if (name.equals("TurnLeft")) steeringInput = 1f;
+                else if (name.equals("TurnRight")) steeringInput = -1f;
             }, "TurnLeft", "TurnRight");
 
 
@@ -95,25 +91,29 @@ public class Main extends SimpleApplication {
             chaseCam.setMinDistance(5f);
             chaseCam.setMaxVerticalRotation((float) Math.PI /2.5f);
 
+            //Floor with a repeating grid texture so you can see the car moving
+            Texture gridTexture = assetManager.loadTexture("Textures/grid.jpg");
+            gridTexture.setWrap(Texture.WrapMode.Repeat);
 
+            Quad floorMesh = new Quad(200f, 200f);
+            Geometry floor = new Geometry("Floor", floorMesh);
+            floor.rotate(-FastMath.HALF_PI, 0, 0);          // lay the quad flat, facing up
+            floor.setLocalTranslation(-100f, -0.05f, 100f); // after rotating it covers x 0..200 and z -200..0, so shift it to center on the origin
+            floorMesh.scaleTextureCoordinates(new Vector2f(25f, 25f)); // repeat the grid 25 times in each direction
 
-        }
+            Material floorMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+            floorMat.setTexture("ColorMap", gridTexture);
+            floor.setMaterial(floorMat);
+            rootNode.attachChild(floor);
+    }
 
+    // Called every frame. tpf is the time since the last frame.
+    @Override
+    public void simpleUpdate(float tpf) {
+        car.handleInput(isAccelerating, isReversing, tpf);
+        car.steer(steeringInput, tpf);
+        car.update(tpf);
 
-            //updater for the car to be abe able to do stuff
-            @Override 
-            public void simpleUpdate(float tpf) {
-                car.accelerate(tpf, isAccelerating);
-                car.brake(tpf, isBraking);
-                car.steer(tpf, steeringInput);
-                car.update(tpf);
-
-                steeringInput = 0f;
-            
-                //Camera follows the car
-                Vector3f carPos = car.getPosition();
-                Vector3f camOffset = new Vector3f(0f, 4f, -6f); //behind and above the car
-                cam.setLocation(carPos.add(camOffset));
-                cam.lookAt(carPos, Vector3f.UNIT_Y);
-            }
+        steeringInput = 0f;
+    }
 }
